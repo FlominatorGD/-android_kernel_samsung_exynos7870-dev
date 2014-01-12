@@ -918,7 +918,7 @@ static int s3c64xx_spi_transfer_one_message(struct spi_master *master,
 		unsigned long flags;
 		int use_dma;
 
-		reinit_completion(&sdd->xfer_completion);
+	reinit_completion(&sdd->xfer_completion);
 
 		/* Only BPW and Speed may change across transfers */
 		bpw = xfer->bits_per_word;
