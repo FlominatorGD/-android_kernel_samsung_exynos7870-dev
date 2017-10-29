@@ -106,7 +106,7 @@ enum {
 #endif /* CONFIG_X86_X32 */
 };
 
-static long __snd_timer_user_ioctl_compat(struct file *file, unsigned int cmd, 
+static long __snd_timer_user_ioctl_compat(struct file *file, unsigned int cmd,
 					  unsigned long arg)
 {
 	void __user *argp = compat_ptr(arg);
