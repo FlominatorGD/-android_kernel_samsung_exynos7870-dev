@@ -3935,6 +3935,16 @@ static inline bool f2fs_bdev_support_discard(struct block_device *bdev)
 #endif
 }
 
+static inline bool f2fs_bdev_support_discard(struct block_device *bdev)
+{
+	return blk_queue_discard(bdev_get_queue(bdev)) ||
+#ifdef CONFIG_BLK_DEV_ZONED
+	       bdev_is_zoned(bdev);
+#else
+	       0;
+#endif
+}
+
 static inline bool f2fs_hw_support_discard(struct f2fs_sb_info *sbi)
 {
 	int i;

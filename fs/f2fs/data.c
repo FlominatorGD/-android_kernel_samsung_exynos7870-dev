@@ -489,8 +489,8 @@ int f2fs_submit_page_bio(struct f2fs_io_info *fio)
 			fio->encrypted_page : fio->page;
 
 	if (!f2fs_is_valid_blkaddr(fio->sbi, fio->new_blkaddr,
-			fio->is_por ? META_POR :
-			(__is_meta_io(fio) ? META_GENERIC : DATA_GENERIC)))
+			fio->is_por ? META_POR : (__is_meta_io(fio) ?
+			META_GENERIC : DATA_GENERIC_ENHANCE)))
 		return -EFAULT;
 
 	trace_f2fs_submit_page_bio(page, fio);
@@ -640,7 +640,11 @@ static int f2fs_submit_page_read(struct inode *inode, struct page *page,
 	}
 	ClearPageError(page);
 	inc_page_count(sbi, F2FS_RD_DATA);
+<<<<<<< HEAD
 	__submit_bio(sbi, bio, DATA);
+=======
+	__f2fs_submit_read_bio(sbi, bio, DATA);
+>>>>>>> a7c0cb68e4b (Merge upstream-f2fs-stable-linux-3.18.y into android-3.18)
 	return 0;
 }
 
@@ -1572,7 +1576,11 @@ zero_out:
 	if (bio && (*last_block_in_bio != block_nr - 1 ||
 		!__same_bdev(F2FS_I_SB(inode), block_nr, bio))) {
 submit_and_realloc:
+<<<<<<< HEAD
 		__submit_bio(F2FS_I_SB(inode), bio, DATA);
+=======
+		__f2fs_submit_read_bio(F2FS_I_SB(inode), bio, DATA);
+>>>>>>> a7c0cb68e4b (Merge upstream-f2fs-stable-linux-3.18.y into android-3.18)
 		bio = NULL;
 	}
 	if (bio == NULL) {
@@ -1600,7 +1608,11 @@ submit_and_realloc:
 	goto out;
 confused:
 	if (bio) {
+<<<<<<< HEAD
 		__submit_bio(F2FS_I_SB(inode), bio, DATA);
+=======
+		__f2fs_submit_read_bio(F2FS_I_SB(inode), bio, DATA);
+>>>>>>> a7c0cb68e4b (Merge upstream-f2fs-stable-linux-3.18.y into android-3.18)
 		bio = NULL;
 	}
 	unlock_page(page);
@@ -1625,13 +1637,8 @@ static int f2fs_mpage_readpages(struct address_space *mapping,
 	struct bio *bio = NULL;
 	sector_t last_block_in_bio = 0;
 	struct inode *inode = mapping->host;
-	const unsigned blkbits = inode->i_blkbits;
-	const unsigned blocksize = 1 << blkbits;
-	sector_t block_in_file;
-	sector_t last_block;
-	sector_t last_block_in_file;
-	sector_t block_nr;
 	struct f2fs_map_blocks map;
+	int ret = 0;
 
 	map.m_pblk = 0;
 	map.m_lblk = 0;
@@ -1652,6 +1659,7 @@ static int f2fs_mpage_readpages(struct address_space *mapping,
 				goto next_page;
 		}
 
+<<<<<<< HEAD
 		block_in_file = (sector_t)page->index;
 		last_block = block_in_file + nr_pages;
 		last_block_in_file = (i_size_read(inode) + blocksize - 1) >>
@@ -1695,56 +1703,15 @@ got_it:
 								DATA_GENERIC))
 				goto set_error_page;
 		} else {
+=======
+		ret = f2fs_read_single_page(inode, page, nr_pages, &map, &bio,
+					&last_block_in_bio, is_readahead);
+		if (ret) {
+			SetPageError(page);
+>>>>>>> a7c0cb68e4b (Merge upstream-f2fs-stable-linux-3.18.y into android-3.18)
 			zero_user_segment(page, 0, PAGE_SIZE);
-			if (!PageUptodate(page))
-				SetPageUptodate(page);
 			unlock_page(page);
-			goto next_page;
 		}
-
-		/*
-		 * This page will go to BIO.  Do we need to send this
-		 * BIO off first?
-		 */
-		if (bio && (last_block_in_bio != block_nr - 1 ||
-			!__same_bdev(F2FS_I_SB(inode), block_nr, bio))) {
-submit_and_realloc:
-			__f2fs_submit_read_bio(F2FS_I_SB(inode), bio, DATA);
-			bio = NULL;
-		}
-		if (bio == NULL) {
-			bio = f2fs_grab_read_bio(inode, block_nr, nr_pages,
-					is_readahead ? REQ_RAHEAD : 0);
-			if (IS_ERR(bio)) {
-				bio = NULL;
-				goto set_error_page;
-			}
-		}
-
-		/*
-		 * If the page is under writeback, we need to wait for
-		 * its completion to see the correct decrypted data.
-		 */
-		f2fs_wait_on_block_writeback(inode, block_nr);
-
-		if (bio_add_page(bio, page, blocksize, 0) < blocksize)
-			goto submit_and_realloc;
-
-		inc_page_count(F2FS_I_SB(inode), F2FS_RD_DATA);
-		ClearPageError(page);
-		last_block_in_bio = block_nr;
-		goto next_page;
-set_error_page:
-		SetPageError(page);
-		zero_user_segment(page, 0, PAGE_SIZE);
-		unlock_page(page);
-		goto next_page;
-confused:
-		if (bio) {
-			__f2fs_submit_read_bio(F2FS_I_SB(inode), bio, DATA);
-			bio = NULL;
-		}
-		unlock_page(page);
 next_page:
 		if (pages)
 			put_page(page);
@@ -1752,7 +1719,7 @@ next_page:
 	BUG_ON(pages && !list_empty(pages));
 	if (bio)
 		__f2fs_submit_read_bio(F2FS_I_SB(inode), bio, DATA);
-	return 0;
+	return pages ? 0 : ret;
 }
 
 static int f2fs_read_data_page(struct file *file, struct page *page)
