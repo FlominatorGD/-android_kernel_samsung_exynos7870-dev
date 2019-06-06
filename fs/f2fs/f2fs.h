@@ -2481,6 +2481,15 @@ static inline bool is_idle(struct f2fs_sb_info *sbi, int type)
 		atomic_read(&SM_I(sbi)->dcc_info->queued_discard) ||
 		atomic_read(&SM_I(sbi)->fcc_info->queued_flush))
 		return false;
+
+	if (type != DISCARD_TIME && SM_I(sbi) && SM_I(sbi)->dcc_info &&
+			atomic_read(&SM_I(sbi)->dcc_info->queued_discard))
+		return false;
+
+	if (SM_I(sbi) && SM_I(sbi)->fcc_info &&
+			atomic_read(&SM_I(sbi)->fcc_info->queued_flush))
+		return false;
+
 	return f2fs_time_over(sbi, type);
 }
 
