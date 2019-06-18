@@ -160,7 +160,11 @@ int f2fs_convert_inline_page(struct dnode_of_data *dn, struct page *page)
 		set_sbi_flag(fio.sbi, SBI_NEED_FSCK);
 		f2fs_warn(fio.sbi, "%s: corrupted inline inode ino=%lx, i_addr[0]:0x%x, run fsck to fix.",
 			  __func__, dn->inode->i_ino, dn->data_blkaddr);
+<<<<<<< HEAD
 		return -EFSCORRUPTED;
+=======
+		return -EINVAL;
+>>>>>>> 01e5dc87d02 (f2fs: introduce f2fs_<level> macros to wrap f2fs_printk())
 	}
 
 	f2fs_bug_on(F2FS_P_SB(page), PageWriteback(page));
