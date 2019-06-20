@@ -533,11 +533,10 @@ retry_dn:
 	f2fs_bug_on(sbi, ni.ino != ino_of_node(page));
 
 	if (ofs_of_node(dn.node_page) != ofs_of_node(page)) {
-		f2fs_msg(sbi->sb, KERN_WARNING,
-			"Inconsistent ofs_of_node, ino:%lu, ofs:%u, %u",
-			inode->i_ino, ofs_of_node(dn.node_page),
-			ofs_of_node(page));
-		err = -EFAULT;
+		f2fs_warn(sbi, "Inconsistent ofs_of_node, ino:%lu, ofs:%u, %u",
+			  inode->i_ino, ofs_of_node(dn.node_page),
+			  ofs_of_node(page));
+		err = -EFSCORRUPTED;
 		goto err;
 	}
 
@@ -549,13 +548,13 @@ retry_dn:
 
 		if (__is_valid_data_blkaddr(src) &&
 			!f2fs_is_valid_blkaddr(sbi, src, META_POR)) {
-			err = -EFAULT;
+			err = -EFSCORRUPTED;
 			goto err;
 		}
 
 		if (__is_valid_data_blkaddr(dest) &&
 			!f2fs_is_valid_blkaddr(sbi, dest, META_POR)) {
-			err = -EFAULT;
+			err = -EFSCORRUPTED;
 			goto err;
 		}
 
