@@ -2969,9 +2969,17 @@ int f2fs_sanity_check_ckpt(struct f2fs_sb_info *sbi)
 	if (cp_pack_start_sum < cp_payload + 1 ||
 		cp_pack_start_sum > blocks_per_seg - 1 -
 			NR_CURSEG_TYPE) {
-		f2fs_msg(sbi->sb, KERN_ERR,
-			"Wrong cp_pack_start_sum: %u",
-			cp_pack_start_sum);
+		f2fs_err(sbi, "Wrong cp_pack_start_sum: %u",
+			 cp_pack_start_sum);
+		return 1;
+	}
+
+	if (__is_set_ckpt_flags(ckpt, CP_LARGE_NAT_BITMAP_FLAG) &&
+		le32_to_cpu(ckpt->checksum_offset) != CP_MIN_CHKSUM_OFFSET) {
+		f2fs_warn(sbi, "using deprecated layout of large_nat_bitmap, "
+			  "please run fsck v1.13.0 or higher to repair, chksum_offset: %u, "
+			  "fixed with patch: \"f2fs-tools: relocate chksum_offset for large_nat_bitmap feature\"",
+			  le32_to_cpu(ckpt->checksum_offset));
 		return 1;
 	}
 
