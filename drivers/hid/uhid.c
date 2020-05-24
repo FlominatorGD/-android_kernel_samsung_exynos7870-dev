@@ -26,11 +26,8 @@
 #include <linux/uhid.h>
 #include <linux/wait.h>
 #include <linux/uaccess.h>
-<<<<<<< HEAD
 #include <linux/eventpoll.h>
 #include <linux/fb.h>
-=======
->>>>>>> 40e10ccf9fb (HID: uhid: forbid UHID_CREATE under KERNEL_DS or elevated privileges)
 
 #define UHID_NAME	"uhid"
 #define UHID_BUFSIZE	32
@@ -788,14 +785,13 @@ unlock:
 static unsigned int uhid_char_poll(struct file *file, poll_table *wait)
 {
 	struct uhid_device *uhid = file->private_data;
-	unsigned int mask = POLLOUT | POLLWRNORM; /* uhid is always writable */
 
 	poll_wait(file, &uhid->waitq, wait);
 
 	if (uhid->head != uhid->tail)
-		mask |= POLLIN | POLLRDNORM;
+		return POLLIN | POLLRDNORM;
 
-	return mask;
+	return EPOLLOUT | EPOLLWRNORM;
 }
 
 static const struct file_operations uhid_fops = {
