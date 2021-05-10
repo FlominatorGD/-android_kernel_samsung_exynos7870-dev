@@ -1823,6 +1823,15 @@ static int snd_usbmidi_get_ms_info(struct snd_usb_midi *umidi,
 		ms_ep = find_usb_ms_endpoint_descriptor(hostep);
 		if (!ms_ep)
 			continue;
+<<<<<<< HEAD
+=======
+		if (ms_ep->bLength <= sizeof(*ms_ep))
+			continue;
+		if (ms_ep->bNumEmbMIDIJack > 0x10)
+			continue;
+		if (ms_ep->bLength < sizeof(*ms_ep) + ms_ep->bNumEmbMIDIJack)
+			continue;
+>>>>>>> 189a3bb8685 (ALSA: usb-audio: Validate MS endpoint descriptors)
 		if (usb_endpoint_dir_out(ep)) {
 			if (endpoints[epidx].out_ep) {
 				if (++epidx >= MIDI_MAX_ENDPOINTS) {
