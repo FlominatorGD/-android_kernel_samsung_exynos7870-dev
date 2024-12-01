@@ -340,22 +340,12 @@ static int set_sync_ep_implicit_fb_quirk(struct snd_usb_substream *subs,
 	case USB_ID(0x0763, 0x2080): /* M-Audio FastTrack Ultra */
 	case USB_ID(0x0763, 0x2081):
 		ep = 0x81;
-<<<<<<< HEAD
-		iface = usb_ifnum_to_if(dev, 2);
-
-		if (!iface || iface->num_altsetting == 0)
-			return -EINVAL;
-
-		alts = &iface->altsetting[1];
-		goto add_sync_ep;
-=======
 		ifnum = 2;
 		goto add_sync_ep_from_ifnum;
 	case USB_ID(0x1397, 0x0002):
 		ep = 0x81;
 		ifnum = 1;
 		goto add_sync_ep_from_ifnum;
->>>>>>> e77abd6b030 (ALSA: usb-audio: simplify set_sync_ep_implicit_fb_quirk)
 	}
 
 	if (attr == USB_ENDPOINT_SYNC_ASYNC &&
