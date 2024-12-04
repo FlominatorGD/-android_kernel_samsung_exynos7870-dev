@@ -1,0 +1,12 @@
+No differences found for .gitignore.
+No differences found for Documentation/ABI/testing/sysfs-devices-system-cpu.
+No differences found for Documentation/ABI/testing/sysfs-fs-f2fs.
+No differences found for Documentation/DocBook/libata.tmpl.
+No differences found for Documentation/devicetree/bindings/vendor-prefixes.txt.
+No differences found for Documentation/filesystems/affs.txt.
+No differences found for Documentation/filesystems/f2fs.txt.
+No differences found for Documentation/filesystems/proc.txt.
+No differences found for README.
+No differences found for arch/arm/Makefile.
+No differences found for arch/arm64/boot/dts/apm-mustang.dts.
+No differences found for arch/arm64/boot/dts/apm-storm.dtsi.
