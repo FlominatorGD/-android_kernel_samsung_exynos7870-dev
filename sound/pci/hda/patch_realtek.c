@@ -5588,15 +5588,6 @@ static const struct hda_fixup alc269_fixups[] = {
 		.chained = true,
 		.chain_id = ALC255_FIXUP_DELL1_MIC_NO_PRESENCE
 	},
-	[ALC256_FIXUP_DELL_INSPIRON_7559_SUBWOOFER] = {
-		.type = HDA_FIXUP_PINS,
-		.v.pins = (const struct hda_pintbl[]) {
-			{ 0x1b, 0x90170151 },
-			{ }
-		},
-		.chained = true,
-		.chain_id = ALC255_FIXUP_DELL1_MIC_NO_PRESENCE
-	},
 };
 
 static const struct snd_pci_quirk alc269_fixup_tbl[] = {
