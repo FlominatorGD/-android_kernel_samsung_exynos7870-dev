@@ -2460,18 +2460,6 @@ struct element {
 	u8 id;
 	u8 datalen;
 	u8 data[];
-<<<<<<< HEAD
-} __packed;
-
-/* element iteration helpers */
-#define for_each_element(_elem, _data, _datalen)			\
-	for (_elem = (const struct element *)(_data);			\
-	     (const u8 *)(_data) + (_datalen) - (const u8 *)_elem >=	\
-		(int)sizeof(*_elem) &&					\
-	     (const u8 *)(_data) + (_datalen) - (const u8 *)_elem >=	\
-		(int)sizeof(*_elem) + _elem->datalen;			\
-	     _elem = (const struct element *)(_elem->data + _elem->datalen))
-=======
 };
 
 /* element iteration helpers */
@@ -2482,7 +2470,6 @@ struct element {
 	     (u8 *)(_data) + (_datalen) - (u8 *)element >=		\
 		sizeof(*element) + element->datalen;			\
 	     element = (void *)(element->data + element->datalen))
->>>>>>> 816b198bebc (cfg80211: add and use strongly typed element iteration macros)
 
 #define for_each_element_id(element, _id, data, datalen)		\
 	for_each_element(element, data, datalen)			\
