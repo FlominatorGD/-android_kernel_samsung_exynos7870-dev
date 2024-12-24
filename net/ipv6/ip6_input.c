@@ -99,7 +99,17 @@ int ipv6_rcv(struct sk_buff *skb, struct net_device *dev, struct packet_type *pt
 	 * arrived via the sending interface (ethX), because of the
 	 * nature of scoping architecture. --yoshfuji
 	 */
-	IP6CB(skb)->iif = skb_dst(skb) ? ip6_dst_idev(skb_dst(skb))->dev->ifindex : dev->ifindex;
+	if (skb_dst(skb) && !ip6_dst_idev(skb_dst(skb))) {
+		struct dst_entry *dst = skb_dst(skb);
+		struct rt6_info *info = (struct rt6_info *)dst;
+
+		pr_err("%s: use=%d, rt6i_ref=%u, ifindex=%d\n", __func__, 
+				dst->__use, atomic_read(&info->rt6i_ref), 
+				dev->ifindex);
+	}
+	IP6CB(skb)->iif = skb_dst(skb) ? (skb_dst(skb)->__use ? 
+			ip6_dst_idev(skb_dst(skb))->dev->ifindex : 
+			dev->ifindex) : dev->ifindex; 
 
 	if (unlikely(!pskb_may_pull(skb, sizeof(*hdr))))
 		goto err;
@@ -149,16 +159,6 @@ int ipv6_rcv(struct sk_buff *skb, struct net_device *dev, struct packet_type *pt
 	 * packets or appear in any Routing header.
 	 */
 	if (ipv6_addr_is_multicast(&hdr->saddr))
-		goto err;
-
-	/* While RFC4291 is not explicit about v4mapped addresses
-	 * in IPv6 headers, it seems clear linux dual-stack
-	 * model can not deal properly with these.
-	 * Security models could be fooled by ::ffff:127.0.0.1 for example.
-	 *
-	 * https://tools.ietf.org/html/draft-itojun-v6ops-v4mapped-harmful-02
-	 */
-	if (ipv6_addr_v4mapped(&hdr->saddr))
 		goto err;
 
 	skb->transport_header = skb->network_header + sizeof(*hdr);
