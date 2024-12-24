@@ -464,13 +464,13 @@ static int usblp_release(struct inode *inode, struct file *file)
 
 	mutex_lock(&usblp_mutex);
 	usblp->used = 0;
-	if (usblp->present)
+
+	if (usblp->present) {
 		usblp_unlink_urbs(usblp);
-
-	usb_autopm_put_interface(usblp->intf);
-
-	if (!usblp->present)		/* finish cleanup from disconnect */
-		usblp_cleanup(usblp);	/* any URBs must be dead */
+		usb_autopm_put_interface(usblp->intf);
+	} else { /* finish cleanup from disconnect */
+		usblp_cleanup(usblp); /* any URBs must be dead */
+	}
 
 	mutex_unlock(&usblp_mutex);
 	return 0;
