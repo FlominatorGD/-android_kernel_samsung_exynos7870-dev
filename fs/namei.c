@@ -40,9 +40,6 @@
 #include "internal.h"
 #include "mount.h"
 
-#define CREATE_TRACE_POINTS
-#include <trace/events/namei.h>
-
 /* [Feb-1997 T. Schoebel-Theuer]
  * Fundamental changes in the pathname lookup mechanisms (namei)
  * were necessary because of omirr.  The reason is that omirr needs
@@ -624,81 +621,6 @@ static inline int d_revalidate(struct dentry *dentry, unsigned int flags)
 	return dentry->d_op->d_revalidate(dentry, flags);
 }
 
-#define INIT_PATH_SIZE 64
-
-static void success_walk_trace(struct nameidata *nd)
-{
-	struct path *pt = &nd->path;
-	struct inode *i = nd->inode;
-	char buf[INIT_PATH_SIZE], *try_buf;
-	int cur_path_size;
-	char *p;
-
-	/* When eBPF/ tracepoint is disabled, keep overhead low. */
-	if (!trace_inodepath_enabled())
-		return;
-
-	/* First try stack allocated buffer. */
-	try_buf = buf;
-	cur_path_size = INIT_PATH_SIZE;
-
-	while (cur_path_size <= PATH_MAX) {
-		/* Free previous heap allocation if we are now trying
-		 * a second or later heap allocation.
-		 */
-		if (try_buf != buf)
-			kfree(try_buf);
-
-		/* All but the first alloc are on the heap. */
-		if (cur_path_size != INIT_PATH_SIZE) {
-			try_buf = kmalloc(cur_path_size, GFP_KERNEL);
-			if (!try_buf) {
-				try_buf = buf;
-				sprintf(try_buf, "error:buf_alloc_failed");
-				break;
-			}
-		}
-
-		p = d_path(pt, try_buf, cur_path_size);
-
-		if (!IS_ERR(p)) {
-			char *end = mangle_path(try_buf, p, "\n");
-
-			if (end) {
-				try_buf[end - try_buf] = 0;
-				break;
-			} else {
-				/* On mangle errors, double path size
-				 * till PATH_MAX.
-				 */
-				cur_path_size = cur_path_size << 1;
-				continue;
-			}
-		}
-
-		if (PTR_ERR(p) == -ENAMETOOLONG) {
-			/* If d_path complains that name is too long,
-			 * then double path size till PATH_MAX.
-			 */
-			cur_path_size = cur_path_size << 1;
-			continue;
-		}
-
-		sprintf(try_buf, "error:d_path_failed_%lu",
-			-1 * PTR_ERR(p));
-		break;
-	}
-
-	if (cur_path_size > PATH_MAX)
-		sprintf(try_buf, "error:d_path_name_too_long");
-
-	trace_inodepath(i, try_buf);
-
-	if (try_buf != buf)
-		kfree(try_buf);
-	return;
-}
-
 /**
  * complete_walk - successful completion of path walk
  * @nd:  pointer nameidata
@@ -737,21 +659,15 @@ static int complete_walk(struct nameidata *nd)
 		rcu_read_unlock();
 	}
 
-	if (likely(!(nd->flags & LOOKUP_JUMPED))) {
-		success_walk_trace(nd);
+	if (likely(!(nd->flags & LOOKUP_JUMPED)))
 		return 0;
-	}
 
-	if (likely(!(dentry->d_flags & DCACHE_OP_WEAK_REVALIDATE))) {
-		success_walk_trace(nd);
+	if (likely(!(dentry->d_flags & DCACHE_OP_WEAK_REVALIDATE)))
 		return 0;
-	}
 
 	status = dentry->d_op->d_weak_revalidate(dentry, nd->flags);
-	if (status > 0) {
-		success_walk_trace(nd);
+	if (status > 0)
 		return 0;
-	}
 
 	if (!status)
 		status = -ESTALE;
@@ -3591,10 +3507,10 @@ retry:
 		goto out;
 	switch (mode & S_IFMT) {
 		case 0: case S_IFREG:
-			error = vfs_create2(path.mnt, path.dentry->d_inode,dentry,mode,true);
+			error = vfs_create2(path.mnt, path.dentry->d_inode, dentry, mode, true);
 			break;
 		case S_IFCHR: case S_IFBLK:
-			error = vfs_mknod2(path.mnt, path.dentry->d_inode,dentry,mode,
+			error = vfs_mknod2(path.mnt, path.dentry->d_inode, dentry, mode,
 					new_decode_dev(dev));
 			break;
 		case S_IFIFO: case S_IFSOCK:
@@ -3754,6 +3670,10 @@ static long do_rmdir(int dfd, const char __user *pathname)
 	struct dentry *dentry;
 	struct nameidata nd;
 	unsigned int lookup_flags = 0;
+#if ANDROID_VERSION < 80000
+	char *path_buf = NULL;
+	char *propagate_path = NULL;
+#endif
 retry:
 	name = user_path_parent(dfd, pathname, &nd, lookup_flags);
 	if (IS_ERR(name))
@@ -3788,11 +3708,31 @@ retry:
 	error = security_path_rmdir(&nd.path, dentry);
 	if (error)
 		goto exit3;
+#if ANDROID_VERSION < 80000
+	if (nd.path.dentry->d_sb->s_op->unlink_callback) {
+		path_buf = kmalloc(PATH_MAX, GFP_KERNEL);
+		propagate_path = dentry_path_raw(dentry, path_buf, PATH_MAX);
+	}
+#endif
 	error = vfs_rmdir2(nd.path.mnt, nd.path.dentry->d_inode, dentry);
+#ifdef CONFIG_PROC_DLOG
+	if (!error)
+		dlog_hook_rmdir(dentry, &nd.path);
+#endif
 exit3:
 	dput(dentry);
 exit2:
 	mutex_unlock(&nd.path.dentry->d_inode->i_mutex);
+#if ANDROID_VERSION < 80000
+	if (path_buf && !error) {
+		nd.path.dentry->d_sb->s_op->unlink_callback(nd.path.dentry->d_sb,
+			propagate_path);
+	}
+	if (path_buf) {
+		kfree(path_buf);
+		path_buf = NULL;
+	}
+#endif
 	mnt_drop_write(nd.path.mnt);
 exit1:
 	path_put(&nd.path);
@@ -3888,6 +3828,10 @@ static long do_unlinkat(int dfd, const char __user *pathname)
 	struct inode *inode = NULL;
 	struct inode *delegated_inode = NULL;
 	unsigned int lookup_flags = 0;
+#if ANDROID_VERSION < 80000
+	char *path_buf = NULL;
+	char *propagate_path = NULL;
+#endif
 retry:
 	name = user_path_parent(dfd, pathname, &nd, lookup_flags);
 	if (IS_ERR(name))
@@ -3912,15 +3856,34 @@ retry_deleg:
 		inode = dentry->d_inode;
 		if (d_is_negative(dentry))
 			goto slashes;
+#if ANDROID_VERSION < 80000
+		if (inode->i_sb->s_op->unlink_callback) {
+			path_buf = kmalloc(PATH_MAX, GFP_KERNEL);
+			propagate_path = dentry_path_raw(dentry, path_buf, PATH_MAX);
+		}
+#endif
 		ihold(inode);
 		error = security_path_unlink(&nd.path, dentry);
 		if (error)
 			goto exit2;
 		error = vfs_unlink2(nd.path.mnt, nd.path.dentry->d_inode, dentry, &delegated_inode);
+#ifdef CONFIG_PROC_DLOG
+		if (!error)
+			dlog_hook(dentry, inode, &nd.path);
+#endif
 exit2:
 		dput(dentry);
 	}
 	mutex_unlock(&nd.path.dentry->d_inode->i_mutex);
+#if ANDROID_VERSION < 80000
+	if (path_buf && !error) {
+		inode->i_sb->s_op->unlink_callback(inode->i_sb, propagate_path);
+	}
+	if (path_buf) {
+		kfree(path_buf);
+		path_buf = NULL;
+	}
+#endif
 	if (inode)
 		iput(inode);	/* truncate the inode here */
 	inode = NULL;
@@ -4048,7 +4011,9 @@ SYSCALL_DEFINE2(symlink, const char __user *, oldname, const char __user *, newn
  * be appropriate for callers that expect the underlying filesystem not
  * to be NFS exported.
  */
-int vfs_link2(struct vfsmount *mnt, struct dentry *old_dentry, struct inode *dir, struct dentry *new_dentry, struct inode **delegated_inode)
+int vfs_link2(struct vfsmount *mnt, struct dentry *old_dentry,
+		struct inode *dir, struct dentry *new_dentry,
+		struct inode **delegated_inode)
 {
 	struct inode *inode = old_dentry->d_inode;
 	unsigned max_links = dir->i_sb->s_max_links;
