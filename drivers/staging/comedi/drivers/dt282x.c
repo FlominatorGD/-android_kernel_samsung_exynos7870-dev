@@ -580,8 +580,7 @@ static irqreturn_t dt282x_interrupt(int irq, void *d)
 	}
 #endif
 	cfc_handle_events(dev, s);
-	if (s_ao)
-		cfc_handle_events(dev, s_ao);
+	cfc_handle_events(dev, s_ao);
 
 	return IRQ_RETVAL(handled);
 }
