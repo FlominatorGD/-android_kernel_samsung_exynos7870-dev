@@ -1086,6 +1086,21 @@ static int acm_write_buffers_alloc(struct acm *acm)
 	return 0;
 }
 
+static int check_samsung_feature_ums_acm_device(struct usb_device *dev)
+{
+	int ret = 0;
+
+ 	pr_info("%s : product=%s\n", __func__, dev->product);
+
+	if (!dev->product)
+		return ret;
+
+	if (!strnicmp(dev->product , "SM-B360E", 8))
+		ret = 1;
+
+	return ret;
+}
+
 static int acm_probe(struct usb_interface *intf,
 		     const struct usb_device_id *id)
 {
@@ -1233,6 +1248,11 @@ next_desc:
 				goto look_for_collapsed_interface;
 			}
 		}
+	} else if (check_samsung_feature_ums_acm_device(usb_dev)) {
+		data_interface = usb_ifnum_to_if(usb_dev, 2);
+		control_interface = usb_ifnum_to_if(usb_dev, 1);
+		pr_info("%s : manual set data_interface = 2, control_interface = 1\n", __func__);
+		goto skip_normal_probe;
 	} else {
 		control_interface = usb_ifnum_to_if(usb_dev, union_header->bMasterInterface0);
 		data_interface = usb_ifnum_to_if(usb_dev, (data_interface_num = union_header->bSlaveInterface0));
@@ -1333,16 +1353,6 @@ made_compressed_probe:
 		goto alloc_fail;
 	}
 
-	ctrlsize = usb_endpoint_maxp(epctrl);
-	readsize = usb_endpoint_maxp(epread) *
-				(quirks == SINGLE_RX_URB ? 1 : 2);
-	acm->combined_interfaces = combined_interfaces;
-	acm->writesize = usb_endpoint_maxp(epwrite) * 20;
-	acm->control = control_interface;
-	acm->data = data_interface;
-
-	usb_get_intf(acm->control); /* undone in destruct() */
-
 	minor = acm_alloc_minor(acm);
 	if (minor == ACM_TTY_MINORS) {
 		dev_err(&intf->dev, "no more free acm devices\n");
@@ -1350,6 +1360,13 @@ made_compressed_probe:
 		return -ENODEV;
 	}
 
+	ctrlsize = usb_endpoint_maxp(epctrl);
+	readsize = usb_endpoint_maxp(epread) *
+				(quirks == SINGLE_RX_URB ? 1 : 2);
+	acm->combined_interfaces = combined_interfaces;
+	acm->writesize = usb_endpoint_maxp(epwrite) * 20;
+	acm->control = control_interface;
+	acm->data = data_interface;
 	acm->minor = minor;
 	acm->dev = usb_dev;
 	acm->ctrl_caps = ac_management_function;
@@ -1504,6 +1521,7 @@ skip_countries:
 	usb_driver_claim_interface(&acm_driver, data_interface, acm);
 	usb_set_intfdata(data_interface, acm);
 
+	usb_get_intf(control_interface);
 	tty_dev = tty_port_register_device(&acm->port, acm_tty_driver, minor,
 			&control_interface->dev);
 	if (IS_ERR(tty_dev)) {
