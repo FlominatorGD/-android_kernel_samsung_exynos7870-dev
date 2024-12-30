@@ -4478,7 +4478,8 @@ static void binder_release_work(struct binder_proc *proc,
 {
 	struct binder_work *w;
 
-	while (1) {		w = binder_dequeue_work_head(proc, list);
+	while (1) {
+		w = binder_dequeue_work_head(proc, list);
 		if (!w)
 			return;
 
@@ -4867,8 +4868,7 @@ static int binder_ioctl_get_node_info_for_ref(struct binder_proc *proc,
 }
 
 static int binder_ioctl_get_node_debug_info(struct binder_proc *proc,
-				struct binder_node_debug_info *info)
-{
+				struct binder_node_debug_info *info) {
 	struct rb_node *n;
 	binder_uintptr_t ptr = info->ptr;
 
