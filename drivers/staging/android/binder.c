@@ -4464,7 +4464,6 @@ static void binder_release_work(struct binder_proc *proc,
 				struct list_head *list)
 {
 	struct binder_work *w;
-	enum binder_work_type wtype;
 
 	while (1) {		w = binder_dequeue_work_head(proc, list);
 		if (!w)
@@ -4508,7 +4507,7 @@ static void binder_release_work(struct binder_proc *proc,
 			break;
 		default:
 			pr_err("unexpected work type, %d, not freed\n",
-			       wtype);
+			       w->type);
 			break;
 		}
 	}
