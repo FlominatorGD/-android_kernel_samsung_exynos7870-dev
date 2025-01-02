@@ -336,11 +336,12 @@ struct _mmc_csd {
 /* additional : eMMC v5.0 or later Only */
 #define EXT_CSD_DEVICE_LIFE_TIME_EST_TYPE_B	269	/* RO */
 #define EXT_CSD_DEVICE_LIFE_TIME_EST_TYPE_A	268	/* RO */
+#define EXT_CSD_DEVICE_LIFE_TIME_EST_TYP_A	268	/* RO */ //fixme
+#define EXT_CSD_DEVICE_LIFE_TIME_EST_TYP_B	269	/* RO */ //fixme
 #define EXT_CSD_PRE_EOL_INFO			267	/* RO */
 #define EXT_CSD_OPTIMAL_TRIM_UNIT_SIZE		264	/* RO */
 #define EXT_CSD_DEVICE_VERSION			262	/* RO, 2Byte */
 #define EXT_CSD_FIRMWARE_VERSION		254	/* RO, 8Byte */
-
 /* additional : eMMC moviNAND VMX(PRE eMMC v5.0) device Only */
 #define EXT_CSD_PREv5_FIRMWARE_VERSION		259	/* RO */
 #define EXT_CSD_PREv5_CTRL_VERSION		258	/* RO */
