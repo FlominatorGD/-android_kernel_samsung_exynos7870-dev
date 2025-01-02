@@ -718,9 +718,9 @@ static int mmc_read_ext_csd(struct mmc_card *card, u8 *ext_csd)
 	if (card->ext_csd.rev >= 7) {
 		card->ext_csd.pre_eol_info = ext_csd[EXT_CSD_PRE_EOL_INFO];
 		card->ext_csd.device_life_time_est_typ_a =
-			ext_csd[EXT_CSD_DEVICE_LIFE_TIME_EST_TYP_A];
+			ext_csd[EXT_CSD_DEVICE_LIFE_TIME_EST_TYPE_A];
 		card->ext_csd.device_life_time_est_typ_b =
-			ext_csd[EXT_CSD_DEVICE_LIFE_TIME_EST_TYP_B];
+			ext_csd[EXT_CSD_DEVICE_LIFE_TIME_EST_TYPE_B];
 	}
 out:
 	return err;
