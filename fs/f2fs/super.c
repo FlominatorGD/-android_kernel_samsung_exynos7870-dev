@@ -3339,7 +3339,7 @@ try_onemore:
 	}
 
 	err = read_raw_super_block(sbi, &raw_super, &valid_super_block,
-					&recovery, retry);
+								&recovery);
 
 	if (err)
 		goto free_sbi;
