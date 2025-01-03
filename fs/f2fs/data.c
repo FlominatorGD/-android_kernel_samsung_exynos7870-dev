@@ -199,10 +199,8 @@ static void f2fs_write_end_io(struct bio *bio, int err)
 
 		if (unlikely(err)) {
 			set_bit(AS_EIO, &page->mapping->flags);
-			if (type == F2FS_WB_CP_DATA) {
+			if (type == F2FS_WB_CP_DATA)
 				f2fs_stop_checkpoint(sbi, true);
-				f2fs_bug_on(sbi, 1);
-			}
 		}
 
 		f2fs_bug_on(sbi, page->mapping == NODE_MAPPING(sbi) &&
@@ -1920,14 +1918,6 @@ got_it:
 		err = -EFSCORRUPTED;
 		goto out_writepage;
 	}
-
-	if (file_is_hot(inode))
-		F2FS_I_SB(inode)->sec_stat.hot_file_written_blocks++;
-	else if (file_is_cold(inode))
-		F2FS_I_SB(inode)->sec_stat.cold_file_written_blocks++;
-	else
-		F2FS_I_SB(inode)->sec_stat.warm_file_written_blocks++;
-
 	/*
 	 * If current allocation needs SSR,
 	 * it had better in-place writes for updated data.
@@ -2026,8 +2016,6 @@ static int __write_data_page(struct page *page, bool *submitted,
 	};
 
 	trace_f2fs_writepage(page, DATA);
-
-	f2fs_cond_set_fua(&fio);
 
 	/* we should bypass data pages to proceed the kworkder jobs */
 	if (unlikely(f2fs_cp_error(sbi))) {
@@ -2409,12 +2397,6 @@ static int f2fs_write_data_pages(struct address_space *mapping,
 {
 	struct inode *inode = mapping->host;
 
-	/* W/A - prevent panic while shutdown */
-	if (unlikely(ignore_fs_panic)) {
-		pr_err("%s: Ignore panic\n", __func__);
-		return -EIO;
-	}
-
 	return __f2fs_write_data_pages(mapping, wbc,
 			F2FS_I(inode)->cp_task == current ?
 			FS_CP_DATA_IO : FS_DATA_IO);
@@ -2715,10 +2697,7 @@ static ssize_t f2fs_direct_IO(int rw, struct kiocb *iocb, struct iov_iter *iter,
 	if (f2fs_force_buffered_io(inode, rw))
 		return 0;
 
-	trace_f2fs_direct_IO_enter(inode, offset, count, rw);
-
-	if (trace_android_fs_dataread_start_enabled() &&
-	    (rw == READ)) {
+	if (trace_android_fs_dataread_start_enabled() && (rw == READ)) {
 		char *path, pathbuf[MAX_TRACE_PATHBUF_LEN];
 
 		path = android_fstrace_get_pathname(pathbuf,
@@ -2728,8 +2707,7 @@ static ssize_t f2fs_direct_IO(int rw, struct kiocb *iocb, struct iov_iter *iter,
 						count, current->pid, path,
 						current->comm);
 	}
-	if (trace_android_fs_datawrite_start_enabled() &&
-	    (rw == WRITE)) {
+	if (trace_android_fs_datawrite_start_enabled() && (rw == WRITE)) {
 		char *path, pathbuf[MAX_TRACE_PATHBUF_LEN];
 
 		path = android_fstrace_get_pathname(pathbuf,
@@ -2739,6 +2717,9 @@ static ssize_t f2fs_direct_IO(int rw, struct kiocb *iocb, struct iov_iter *iter,
 						 current->pid, path,
 						 current->comm);
 	}
+
+	trace_f2fs_direct_IO_enter(inode, offset, count, rw);
+
 	/* if (rw == WRITE && whint_mode == WHINT_MODE_OFF)
 		iocb->ki_hint = WRITE_LIFE_NOT_SET; */
 
@@ -2758,14 +2739,12 @@ static ssize_t f2fs_direct_IO(int rw, struct kiocb *iocb, struct iov_iter *iter,
 		}
 	}
 
-	if (trace_android_fs_dataread_start_enabled() &&
-	    (rw == READ))
-		trace_android_fs_dataread_end(inode, offset, count);
-	if (trace_android_fs_datawrite_start_enabled() &&
-	    (rw == WRITE))
-		trace_android_fs_datawrite_end(inode, offset, count);
-
 	trace_f2fs_direct_IO_exit(inode, offset, count, rw, err);
+
+	if (trace_android_fs_dataread_start_enabled() && (rw == READ))
+		trace_android_fs_dataread_end(inode, offset, count);
+	if (trace_android_fs_datawrite_start_enabled() && (rw == WRITE))
+		trace_android_fs_datawrite_end(inode, offset, count);
 
 	return err;
 }
@@ -2793,7 +2772,6 @@ void f2fs_invalidate_page(struct page *page, unsigned int offset,
 
 	clear_cold_data(page);
 
-	/* This is atomic written page, keep Private */
 	if (IS_ATOMIC_WRITTEN_PAGE(page))
 		return f2fs_drop_inmem_page(inode, page);
 

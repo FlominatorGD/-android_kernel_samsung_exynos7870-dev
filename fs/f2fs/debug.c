@@ -182,7 +182,6 @@ static void update_sit_info(struct f2fs_sb_info *sbi)
 static void update_mem_info(struct f2fs_sb_info *sbi)
 {
 	struct f2fs_stat_info *si = F2FS_STAT(sbi);
-	unsigned npages;
 	int i;
 
 	if (si->base_mem)
@@ -266,11 +265,11 @@ get_cache:
 
 	si->page_mem = 0;
 	if (sbi->node_inode) {
-		npages = NODE_MAPPING(sbi)->nrpages;
+		unsigned npages = NODE_MAPPING(sbi)->nrpages;
 		si->page_mem += (unsigned long long)npages << PAGE_SHIFT;
 	}
 	if (sbi->meta_inode) {
-		npages = META_MAPPING(sbi)->nrpages;
+		unsigned npages = META_MAPPING(sbi)->nrpages;
 		si->page_mem += (unsigned long long)npages << PAGE_SHIFT;
 	}
 }
@@ -515,13 +514,6 @@ int f2fs_build_stats(struct f2fs_sb_info *sbi)
 	mutex_unlock(&f2fs_stat_mutex);
 
 	return 0;
-}
-
-void f2fs_update_sec_stats(struct f2fs_sb_info *sbi)
-{
-	update_general_status(sbi);
-	update_sit_info(sbi);
-	update_mem_info(sbi);
 }
 
 void f2fs_destroy_stats(struct f2fs_sb_info *sbi)
