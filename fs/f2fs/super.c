@@ -2005,7 +2005,7 @@ int f2fs_enable_quota_files(struct f2fs_sb_info *sbi, bool rdonly)
 	int enabled = 0;
 	int i, err;
 
-	if (f2fs_sb_has_quota_ino(sbi->sb) && rdonly) {
+	if (f2fs_sb_has_quota_ino(sbi) && rdonly) {
 		err = f2fs_enable_quotas(sbi->sb);
 		if (err) {
 			f2fs_err(sbi, "Cannot turn on quota_ino: %d", err);
@@ -2429,7 +2429,7 @@ static int f2fs_set_context(struct inode *inode, const void *ctx, size_t len,
 	 * if LOST_FOUND feature is enabled.
 	 *
 	 */
-	if (f2fs_sb_has_lost_found(sbi->sb) &&
+	if (f2fs_sb_has_lost_found(sbi) &&
 			inode->i_ino == F2FS_ROOT_INO(sbi))
 		return -EPERM;
 
@@ -2650,12 +2650,12 @@ static int sanity_check_raw_super(struct f2fs_sb_info *sbi,
 			offsetof(struct f2fs_super_block, crc)) {
 			f2fs_info(sbi, "Invalid SB checksum offset: %zu",
 				  crc_offset);
-			return 1;
+			return -EFSCORRUPTED;
 		}
 		crc = le32_to_cpu(raw_super->crc);
 		if (!f2fs_crc_valid(sbi, crc, raw_super, crc_offset)) {
 			f2fs_info(sbi, "Invalid SB checksum value: %u", crc);
-			return 1;
+			return -EFSCORRUPTED;
 		}
 	}
 
@@ -2909,8 +2909,16 @@ int f2fs_sanity_check_ckpt(struct f2fs_sb_info *sbi)
 
 	if (__is_set_ckpt_flags(ckpt, CP_LARGE_NAT_BITMAP_FLAG) &&
 		le32_to_cpu(ckpt->checksum_offset) != CP_MIN_CHKSUM_OFFSET) {
-		f2fs_warn(sbi, "layout of large_nat_bitmap is deprecated, run fsck to repair, chksum_offset: %u",
+		f2fs_warn(sbi, "using deprecated layout of large_nat_bitmap, "
+			  "please run fsck v1.13.0 or higher to repair, chksum_offset: %u, "
+			  "fixed with patch: \"f2fs-tools: relocate chksum_offset for large_nat_bitmap feature\"",
+			  le32_to_cpu(ckpt->checksum_offset));
+		return 1;
+	}
+
+	if (unlikely(f2fs_cp_error(sbi))) {
 		f2fs_err(sbi, "A bug case: need to run fsck");
+		return 1;
 	}
 	return 0;
 }
@@ -3001,7 +3009,7 @@ static int init_blkz_info(struct f2fs_sb_info *sbi, int devi)
 	unsigned int n = 0;
 	int err = -EIO;
 
-	if (!f2fs_sb_has_blkzoned(sbi->sb))
+	if (!f2fs_sb_has_blkzoned(sbi))
 		return 0;
 
 	if (sbi->blocks_per_blkz && sbi->blocks_per_blkz !=
@@ -3134,7 +3142,7 @@ int f2fs_commit_super(struct f2fs_sb_info *sbi, bool recover)
 	}
 
 	/* we should update superblock crc here */
-	if (!recover && f2fs_sb_has_sb_chksum(sbi->sb)) {
+	if (!recover && f2fs_sb_has_sb_chksum(sbi)) {
 		crc = f2fs_crc32(sbi, F2FS_RAW_SUPER(sbi),
 				offsetof(struct f2fs_super_block, crc));
 		F2FS_RAW_SUPER(sbi)->crc = cpu_to_le32(crc);
@@ -3321,7 +3329,7 @@ try_onemore:
 	sbi->raw_super = raw_super;
 
 	/* precompute checksum seed for metadata */
-	if (f2fs_sb_has_inode_chksum(sb))
+	if (f2fs_sb_has_inode_chksum(sbi))
 		sbi->s_chksum_seed = f2fs_chksum(sbi, ~0, raw_super->uuid,
 						sizeof(raw_super->uuid));
 
@@ -3360,7 +3368,7 @@ try_onemore:
 #if 0	/* not support */
 	sb->s_quota_types = QTYPE_MASK_USR | QTYPE_MASK_GRP | QTYPE_MASK_PRJ;
 
-	if (f2fs_sb_has_quota_ino(sbi->sb)) {
+	if (f2fs_sb_has_quota_ino(sbi)) {
 		for (i = 0; i < MAXQUOTAS; i++) {
 			if (f2fs_qf_ino(sbi->sb, i))
 				sbi->nquota_files++;
@@ -3565,7 +3573,7 @@ try_onemore:
 
 #ifdef CONFIG_QUOTA
 	/* Enable quota usage during mount */
-	if (f2fs_sb_has_quota_ino(sb) && !f2fs_readonly(sb)) {
+	if (f2fs_sb_has_quota_ino(sbi) && !f2fs_readonly(sb)) {
 		err = f2fs_enable_quotas(sb);
 		if (err)
 			f2fs_err(sbi, "Cannot turn on quotas: error %d", err);
@@ -3669,7 +3677,7 @@ sync_free_meta:
 free_meta:
 #ifdef CONFIG_QUOTA
 	f2fs_truncate_quota_inode_pages(sb);
-	if (f2fs_sb_has_quota_ino(sb) && !f2fs_readonly(sb))
+	if (f2fs_sb_has_quota_ino(sbi) && !f2fs_readonly(sb))
 		f2fs_quota_off_umount(sbi->sb);
 #endif
 	/*
@@ -3691,7 +3699,7 @@ free_node_inode:
 	iput(sbi->node_inode);
 	sbi->node_inode = NULL;
 free_stats:
-    f2fs_destroy_stats(sbi);
+	f2fs_destroy_stats(sbi);
 free_nm:
 	f2fs_destroy_node_manager(sbi);
 free_sm:
