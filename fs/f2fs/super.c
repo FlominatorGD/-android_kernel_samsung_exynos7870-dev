@@ -331,37 +331,28 @@ static inline void limit_reserve_root(struct f2fs_sb_info *sbi)
 	block_t limit = min((sbi->user_block_count << 1) / 1000,
 			sbi->user_block_count - sbi->reserved_blocks);
 
-	/* limit is 1.0% */
+	/* limit is 0.2% */
 	if (test_opt(sbi, RESERVE_ROOT) &&
 			F2FS_OPTION(sbi).root_reserved_blocks > limit) {
 		F2FS_OPTION(sbi).root_reserved_blocks = limit;
-		f2fs_msg(sbi->sb, KERN_INFO,
-				"Reduce reserved blocks for root = %u",
-				F2FS_OPTION(sbi).root_reserved_blocks);
-	}
-	if (test_opt(sbi, RESERVE_ROOT) &&
-			F2FS_OPTION(sbi).core_reserved_blocks > limit) {
-		F2FS_OPTION(sbi).core_reserved_blocks = limit;
-		f2fs_msg(sbi->sb, KERN_INFO,
-			"Reduce reserved blocks for core = %u",
-			F2FS_OPTION(sbi).core_reserved_blocks);
+		f2fs_info(sbi, "Reduce reserved blocks for root = %u",
+			  F2FS_OPTION(sbi).root_reserved_blocks);
 	}
 	if (!test_opt(sbi, RESERVE_ROOT) &&
 		(!uid_eq(F2FS_OPTION(sbi).s_resuid,
 				make_kuid(&init_user_ns, F2FS_DEF_RESUID)) ||
 		!gid_eq(F2FS_OPTION(sbi).s_resgid,
-				make_kgid(&init_user_ns, F2FS_DEF_RESGID)) ||
-		F2FS_OPTION(sbi).core_reserved_blocks != 0))
-		f2fs_msg(sbi->sb, KERN_INFO,
-			"Ignore s_resuid=%u, s_resgid=%u reserve_core=%u w/o reserve_root",
-					F2FS_OPTION(sbi).s_resuid),
-				from_kgid_munged(&init_user_ns,
-					F2FS_OPTION(sbi).s_resgid),
-				F2FS_OPTION(sbi).core_reserved_blocks);
 				make_kgid(&init_user_ns, F2FS_DEF_RESGID))))
 		f2fs_info(sbi, "Ignore s_resuid=%u, s_resgid=%u w/o reserve_root",
 			  from_kuid_munged(&init_user_ns,
 					   F2FS_OPTION(sbi).s_resuid),
+			  from_kgid_munged(&init_user_ns,
+					   F2FS_OPTION(sbi).s_resgid));
+}
+
+static void init_once(void *foo)
+{
+	struct f2fs_inode_info *fi = (struct f2fs_inode_info *) foo;
 
 	inode_init_once(&fi->vfs_inode);
 }
