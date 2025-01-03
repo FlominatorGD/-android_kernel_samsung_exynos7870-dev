@@ -1506,8 +1506,6 @@ out:
 	return ret;
 }
 
-<<<<<<< HEAD
-=======
 static int f2fs_read_single_page(struct inode *inode, struct page *page,
 					unsigned nr_pages,
 					struct f2fs_map_blocks *map,
@@ -1620,7 +1618,6 @@ out:
 	return ret;
 }
 
->>>>>>> 81b6d182e1b (f2fs: introduce DATA_GENERIC_ENHANCE)
 /*
  * This function was originally taken from fs/mpage.c, and customized for f2fs.
  * Major change was from block_size == page_size in f2fs by default.
