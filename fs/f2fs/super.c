@@ -3089,7 +3089,7 @@ static int init_blkz_info(struct f2fs_sb_info *sbi, int devi)
  */
 static int read_raw_super_block(struct f2fs_sb_info *sbi,
 			struct f2fs_super_block **raw_super,
-			int *valid_super_block, int *recovery, bool verbose)
+			int *valid_super_block, int *recovery)
 {
 	struct super_block *sb = sbi->sb;
 	int block;
@@ -3111,13 +3111,10 @@ static int read_raw_super_block(struct f2fs_sb_info *sbi,
 		}
 
 		/* sanity checking of raw super */
-		if (sanity_check_raw_super(sbi, bh)) {
-			f2fs_msg(sb, KERN_ERR,
-				"Can't find valid F2FS filesystem in %dth superblock",
-				block + 1);
-			err = -EINVAL;
-			if (verbose)
-				print_bh(sb, bh, 0, sb->s_blocksize);
+		err = sanity_check_raw_super(sbi, bh);
+		if (err) {
+			f2fs_err(sbi, "Can't find valid F2FS filesystem in %dth superblock",
+				 block + 1);
 			brelse(bh);
 			continue;
 		}
