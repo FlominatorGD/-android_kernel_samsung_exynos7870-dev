@@ -790,14 +790,14 @@ static int get_checkpoint_version(struct f2fs_sb_info *sbi, block_t cp_addr,
 	if (crc_offset < CP_MIN_CHKSUM_OFFSET ||
 			crc_offset > CP_CHKSUM_OFFSET) {
 		f2fs_put_page(*cp_page, 1);
-		f2fs_warn(sbi, "invalid crc_offset: %zu", crc_offset);
+		//f2fs_warn(sbi, "invalid crc_offset: %zu", crc_offset); //fixme
 		return -EINVAL;
 	}
 
 	crc = f2fs_checkpoint_chksum(sbi, *cp_block);
 	if (crc != cur_cp_crc(*cp_block)) {
 		f2fs_put_page(*cp_page, 1);
-		f2fs_warn(sbi, "invalid crc value");
+		//f2fs_warn(sbi, "invalid crc value"); //fixme
 		return -EINVAL;
 	}
 
