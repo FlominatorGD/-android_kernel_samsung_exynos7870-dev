@@ -489,12 +489,8 @@ int f2fs_submit_page_bio(struct f2fs_io_info *fio)
 			fio->encrypted_page : fio->page;
 
 	if (!f2fs_is_valid_blkaddr(fio->sbi, fio->new_blkaddr,
-<<<<<<< HEAD
-			__is_meta_io(fio) ? META_GENERIC : DATA_GENERIC))
-=======
 			fio->is_por ? META_POR : (__is_meta_io(fio) ?
 			META_GENERIC : DATA_GENERIC_ENHANCE)))
->>>>>>> 81b6d182e1b (f2fs: introduce DATA_GENERIC_ENHANCE)
 		return -EFAULT;
 
 	trace_f2fs_submit_page_bio(page, fio);
@@ -643,13 +639,8 @@ static int f2fs_submit_page_read(struct inode *inode, struct page *page,
 		return -EFAULT;
 	}
 	ClearPageError(page);
-<<<<<<< HEAD
-	inc_page_count(F2FS_I_SB(inode), F2FS_RD_DATA);
-	__f2fs_submit_read_bio(F2FS_I_SB(inode), bio, DATA);
-=======
 	inc_page_count(sbi, F2FS_RD_DATA);
 	__submit_bio(sbi, bio, DATA);
->>>>>>> 81b6d182e1b (f2fs: introduce DATA_GENERIC_ENHANCE)
 	return 0;
 }
 
