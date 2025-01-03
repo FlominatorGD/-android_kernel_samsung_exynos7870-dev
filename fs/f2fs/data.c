@@ -696,11 +696,7 @@ static int f2fs_submit_page_read(struct inode *inode, struct page *page,
 	}
 	ClearPageError(page);
 	inc_page_count(sbi, F2FS_RD_DATA);
-<<<<<<< HEAD
-	__submit_bio(sbi, bio, DATA);
-=======
 	__f2fs_submit_read_bio(sbi, bio, DATA);
->>>>>>> a7c0cb68e4b (Merge upstream-f2fs-stable-linux-3.18.y into android-3.18)
 	return 0;
 }
 
@@ -1633,11 +1629,7 @@ zero_out:
 	if (bio && (*last_block_in_bio != block_nr - 1 ||
 		!__same_bdev(F2FS_I_SB(inode), block_nr, bio))) {
 submit_and_realloc:
-<<<<<<< HEAD
-		__submit_bio(F2FS_I_SB(inode), bio, DATA);
-=======
 		__f2fs_submit_read_bio(F2FS_I_SB(inode), bio, DATA);
->>>>>>> a7c0cb68e4b (Merge upstream-f2fs-stable-linux-3.18.y into android-3.18)
 		bio = NULL;
 	}
 	if (bio == NULL) {
@@ -1665,11 +1657,7 @@ submit_and_realloc:
 	goto out;
 confused:
 	if (bio) {
-<<<<<<< HEAD
-		__submit_bio(F2FS_I_SB(inode), bio, DATA);
-=======
 		__f2fs_submit_read_bio(F2FS_I_SB(inode), bio, DATA);
->>>>>>> a7c0cb68e4b (Merge upstream-f2fs-stable-linux-3.18.y into android-3.18)
 		bio = NULL;
 	}
 	unlock_page(page);
@@ -1716,56 +1704,10 @@ static int f2fs_mpage_readpages(struct address_space *mapping,
 				goto next_page;
 		}
 
-<<<<<<< HEAD
-		block_in_file = (sector_t)page->index;
-		last_block = block_in_file + nr_pages;
-		last_block_in_file = (i_size_read(inode) + blocksize - 1) >>
-								blkbits;
-		if (last_block > last_block_in_file)
-			last_block = last_block_in_file;
-
-		/*
-		 * Map blocks using the previous result first.
-		 */
-		if ((map.m_flags & F2FS_MAP_MAPPED) &&
-				block_in_file > map.m_lblk &&
-				block_in_file < (map.m_lblk + map.m_len))
-			goto got_it;
-
-		/*
-		 * Then do more f2fs_map_blocks() calls until we are
-		 * done with this page.
-		 */
-		map.m_flags = 0;
-
-		if (block_in_file < last_block) {
-			map.m_lblk = block_in_file;
-			map.m_len = last_block - block_in_file;
-
-			if (f2fs_map_blocks(inode, &map, 0,
-						F2FS_GET_BLOCK_DEFAULT))
-				goto set_error_page;
-		}
-got_it:
-		if ((map.m_flags & F2FS_MAP_MAPPED)) {
-			block_nr = map.m_pblk + block_in_file - map.m_lblk;
-			SetPageMappedToDisk(page);
-
-			if (!PageUptodate(page) && !cleancache_get_page(page)) {
-				SetPageUptodate(page);
-				goto confused;
-			}
-
-			if (!f2fs_is_valid_blkaddr(F2FS_I_SB(inode), block_nr,
-								DATA_GENERIC))
-				goto set_error_page;
-		} else {
-=======
 		ret = f2fs_read_single_page(inode, page, nr_pages, &map, &bio,
 					&last_block_in_bio, is_readahead);
 		if (ret) {
 			SetPageError(page);
->>>>>>> a7c0cb68e4b (Merge upstream-f2fs-stable-linux-3.18.y into android-3.18)
 			zero_user_segment(page, 0, PAGE_SIZE);
 			unlock_page(page);
 		}
