@@ -374,9 +374,8 @@ static int f2fs_set_qf_name(struct super_block *sb, int qtype,
 		f2fs_err(sbi, "Cannot change journaled quota options when quota turned on");
 		return -EINVAL;
 	}
-	if (f2fs_sb_has_quota_ino(sb)) {
-		f2fs_msg(sb, KERN_INFO,
-			"QUOTA feature is enabled, so ignore qf_name");
+	if (f2fs_sb_has_quota_ino(sbi)) {
+		f2fs_info(sbi, "QUOTA feature is enabled, so ignore qf_name");
 		return 0;
 	}
 
@@ -385,9 +384,14 @@ static int f2fs_set_qf_name(struct super_block *sb, int qtype,
 		f2fs_err(sbi, "Not enough memory for storing quotafile name");
 		return -ENOMEM;
 	}
+	if (F2FS_OPTION(sbi).s_qf_names[qtype]) {
 		if (strcmp(F2FS_OPTION(sbi).s_qf_names[qtype], qname) == 0)
 			ret = 0;
 		else
+			f2fs_err(sbi, "%s quota file already specified",
+				 QTYPE2NAME(qtype));
+		goto errout;
+	}
 	if (strchr(qname, '/')) {
 		f2fs_err(sbi, "quotafile must be on filesystem root");
 		goto errout;
@@ -456,10 +460,11 @@ static int f2fs_check_quota_options(struct f2fs_sb_info *sbi)
 		}
 	}
 
-	if (f2fs_sb_has_quota_ino(sbi->sb) && F2FS_OPTION(sbi).s_jquota_fmt) {
-		f2fs_msg(sbi->sb, KERN_INFO,
-			"QUOTA feature is enabled, so ignore jquota_fmt");
 	if (f2fs_sb_has_quota_ino(sbi) && F2FS_OPTION(sbi).s_jquota_fmt) {
+		f2fs_info(sbi, "QUOTA feature is enabled, so ignore jquota_fmt");
+		F2FS_OPTION(sbi).s_jquota_fmt = 0;
+	}
+	return 0;
 }
 #endif
 static int f2fs_keypress_callback_fn(struct super_block *sb)

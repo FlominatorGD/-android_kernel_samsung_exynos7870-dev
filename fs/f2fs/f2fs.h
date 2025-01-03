@@ -25,6 +25,7 @@
 #include <linux/writeback.h>
 #include <linux/ctype.h>
 #include <linux/overflow.h>
+#include <linux/fs.h>
 #include "../mount.h"
 
 #define __FS_HAS_ENCRYPTION IS_ENABLED(CONFIG_F2FS_FS_ENCRYPTION)
