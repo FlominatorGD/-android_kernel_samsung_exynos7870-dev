@@ -825,11 +825,7 @@ static int get_checkpoint_version(struct f2fs_sb_info *sbi, block_t cp_addr,
 	if (crc_offset < CP_MIN_CHKSUM_OFFSET ||
 			crc_offset > CP_CHKSUM_OFFSET) {
 		f2fs_put_page(*cp_page, 1);
-<<<<<<< HEAD
-		//f2fs_warn(sbi, "invalid crc_offset: %zu", crc_offset); //fixme
-=======
 		f2fs_warn(sbi, "invalid crc_offset: %zu", crc_offset);
->>>>>>> 01e5dc87d02 (f2fs: introduce f2fs_<level> macros to wrap f2fs_printk())
 		return -EINVAL;
 	}
 
@@ -847,15 +843,7 @@ static int get_checkpoint_version(struct f2fs_sb_info *sbi, block_t cp_addr,
 	crc = f2fs_checkpoint_chksum(sbi, *cp_block);
 	if (crc != cur_cp_crc(*cp_block)) {
 		f2fs_put_page(*cp_page, 1);
-<<<<<<< HEAD
-		//f2fs_warn(sbi, "invalid crc value"); //fixme
-=======
 		f2fs_warn(sbi, "invalid crc value");
->>>>>>> 01e5dc87d02 (f2fs: introduce f2fs_<level> macros to wrap f2fs_printk())
-		return -EINVAL;
-	}
-
-	*version = cur_cp_version(*cp_block);
 	return 0;
 }
 
