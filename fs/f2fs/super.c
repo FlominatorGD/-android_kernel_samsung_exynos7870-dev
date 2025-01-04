@@ -23,6 +23,7 @@
 #include <linux/f2fs_fs.h>
 #include <linux/sysfs.h>
 #include <linux/quota.h>
+#include <linux/nls.h>
 #ifdef CONFIG_QUOTA
 #include <linux/seq_file.h>
 #endif
