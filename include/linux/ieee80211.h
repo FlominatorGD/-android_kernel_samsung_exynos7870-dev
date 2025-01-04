@@ -1966,6 +1966,7 @@ enum ieee80211_key_len {
 	WLAN_KEY_LEN_TKIP = 32,
 	WLAN_KEY_LEN_AES_CMAC = 16,
 	WLAN_KEY_LEN_SMS4 = 32,
+	WLAN_KEY_LEN_WAPI_SMS4 = 32,
 };
 
 #define IEEE80211_WEP_IV_LEN		4
@@ -2187,15 +2188,21 @@ enum ieee80211_sa_query_action {
 #define WLAN_CIPHER_SUITE_GCMP		0x000FAC08
 
 #define WLAN_CIPHER_SUITE_SMS4		0x00147201
+#define WLAN_CIPHER_SUITE_PMK		0x00904C00 /* 802.11r */
 
 /* AKM suite selectors */
 #define WLAN_AKM_SUITE_8021X		0x000FAC01
 #define WLAN_AKM_SUITE_PSK		0x000FAC02
+#define WLAN_AKM_SUITE_FT_8021X		0x000FAC03 /* 802.11r */
+#define WLAN_AKM_SUITE_FT_PSK		0x000FAC04 /* 802.11r */
 #define WLAN_AKM_SUITE_8021X_SHA256	0x000FAC05
 #define WLAN_AKM_SUITE_PSK_SHA256	0x000FAC06
 #define WLAN_AKM_SUITE_TDLS		0x000FAC07
 #define WLAN_AKM_SUITE_SAE		0x000FAC08
 #define WLAN_AKM_SUITE_FT_OVER_SAE	0x000FAC09
+#define WLAN_AKM_SUITE_WAPI_PSK		0x000FAC0B  /* WAPI */
+#define WLAN_AKM_SUITE_WAPI_CERT	0x000FAC0C  /* WAPI */
+#define WLAN_AKM_SUITE_CCKM		0x00409600  /* CCKM */
 
 #define WLAN_MAX_KEY_LEN		32
 
@@ -2453,16 +2460,16 @@ struct element {
 	u8 id;
 	u8 datalen;
 	u8 data[];
-} __packed;
+};
 
 /* element iteration helpers */
-#define for_each_element(_elem, _data, _datalen)			\
-	for (_elem = (const struct element *)(_data);			\
-	     (const u8 *)(_data) + (_datalen) - (const u8 *)_elem >=	\
-		(int)sizeof(*_elem) &&					\
-	     (const u8 *)(_data) + (_datalen) - (const u8 *)_elem >=	\
-		(int)sizeof(*_elem) + _elem->datalen;			\
-	     _elem = (const struct element *)(_elem->data + _elem->datalen))
+#define for_each_element(element, _data, _datalen)			\
+	for (element = (void *)(_data);					\
+	     (u8 *)(_data) + (_datalen) - (u8 *)element >=		\
+		sizeof(*element) &&					\
+	     (u8 *)(_data) + (_datalen) - (u8 *)element >=		\
+		sizeof(*element) + element->datalen;			\
+	     element = (void *)(element->data + element->datalen))
 
 #define for_each_element_id(element, _id, data, datalen)		\
 	for_each_element(element, data, datalen)			\
@@ -2499,7 +2506,7 @@ struct element {
 static inline bool for_each_element_completed(const struct element *element,
 					      const void *data, size_t datalen)
 {
-	return (const u8 *)element == (const u8 *)data + datalen;
+	return (u8 *)element == (u8 *)data + datalen;
 }
 
 #endif /* LINUX_IEEE80211_H */
