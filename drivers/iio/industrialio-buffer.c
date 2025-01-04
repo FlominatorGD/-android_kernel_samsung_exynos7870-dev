@@ -475,7 +475,7 @@ static int iio_compute_scan_bytes(struct iio_dev *indio_dev,
 {
 	const struct iio_chan_spec *ch;
 	unsigned bytes = 0;
-	int length, i, largest = 0;
+	int length, i;
 
 	/* How much space will the demuxed element take? */
 	for_each_set_bit(i, mask,
@@ -488,7 +488,6 @@ static int iio_compute_scan_bytes(struct iio_dev *indio_dev,
 			length = ch->scan_type.storagebits / 8;
 		bytes = ALIGN(bytes, length);
 		bytes += length;
-		largest = max(largest, length);
 	}
 	if (timestamp) {
 		ch = iio_find_channel_from_si(indio_dev,
@@ -500,10 +499,7 @@ static int iio_compute_scan_bytes(struct iio_dev *indio_dev,
 			length = ch->scan_type.storagebits / 8;
 		bytes = ALIGN(bytes, length);
 		bytes += length;
-		largest = max(largest, length);
 	}
-
-	bytes = ALIGN(bytes, largest);
 	return bytes;
 }
 
@@ -795,6 +791,24 @@ done:
 	return (ret < 0) ? ret : len;
 }
 EXPORT_SYMBOL(iio_buffer_store_enable);
+
+int iio_sw_buffer_preenable(struct iio_dev *indio_dev)
+{
+	struct iio_buffer *buffer;
+	unsigned bytes;
+	dev_dbg(&indio_dev->dev, "%s\n", __func__);
+
+	list_for_each_entry(buffer, &indio_dev->buffer_list, buffer_list)
+		if (buffer->access->set_bytes_per_datum) {
+			bytes = iio_compute_scan_bytes(indio_dev,
+						       buffer->scan_mask,
+						       buffer->scan_timestamp);
+
+			buffer->access->set_bytes_per_datum(buffer, bytes);
+		}
+	return 0;
+}
+EXPORT_SYMBOL(iio_sw_buffer_preenable);
 
 /**
  * iio_validate_scan_mask_onehot() - Validates that exactly one channel is selected
